@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenPGP.js web PKI Demo (v6)</title>
+    <script src="https://cdn.jsdelivr.net/npm/openpgp@6.1.1/dist/openpgp.min.js"></script>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔐 OpenPGP.js web PKI Demo (v6)</h1>
+            <p>Generate keys, sign messages, and encrypt/decrypt data with modern cryptography</p>
+        </div>
+
+        <div class="card-grid">
+            
+            <div class="card">
+                <h2>
+                    <span class="icon">🔑</span>
+                    Key Generation
+                    <span id="keyStatus" class="status pending">No Keys</span>
+                </h2>
+                <div class="form-group">
+                    <label for="userName">Name:</label>
+                    <input type="text" id="userName" placeholder="Your Name" >
+                </div>
+                <div class="form-group">
+                    <label for="userEmail">Email:</label>
+                    <input type="email" id="userEmail" placeholder="Your e-mail">
+                </div>
+                <div class="form-group">
+                    <label for="passphrase">Passphrase:</label>
+                    <input type="password" id="passphrase" placeholder="Enter a strong passphrase" value="demo123">
+                </div>
+                <button class="btn" id="generateBtn">Generate Key Pair</button>
+                <div class="key-actions" style="margin-top: 10px;">
+                    <button class="btn" id="saveKeyBtn" disabled>Save Key Pair</button>
+                    <button class="btn" id="loadKeyBtn">Load Key Pair</button>
+                    <input type="file" id="keyFileInput" accept=".json" style="display: none;">
+                </div>
+                <div id="keyOutput" class="output" style="display: none;"></div>
+            </div>
+
+            <div class="card">
+                <h2>
+                    <span class="icon">✍️</span>
+                    Sign Message
+                    <span id="signStatus" class="status pending">Keys Required</span>
+                </h2>
+                <div class="form-group">
+                    <label for="messageToSign">Message to Sign:</label>
+                    <textarea id="messageToSign" placeholder="Enter your message here...">Hello, this is a test message that will be digitally signed!</textarea>
+                </div>
+                <button class="btn" id="signBtn" disabled>Sign Message</button>
+                <div id="signOutput" class="output" style="display: none;"></div>
+            </div>
+
+            <div class="card">
+                <h2>
+                    <span class="icon">🔒</span>
+                    Encrypt Message
+                    <span id="encryptStatus" class="status pending">Keys Required</span>
+                </h2>
+                <div class="form-group">
+                    <label for="messageToEncrypt">Message to Encrypt:</label>
+                    <textarea id="messageToEncrypt" placeholder="Enter your secret message...">This is a secret message that will be encrypted!</textarea>
+                </div>
+
+                <button id="toggleEncryptPublicKeyBtn" class="btn">Use Custom Public Key</button>
+
+                <div class="form-group" id="encryptCustomPublicKeyContainer" style="display:none;">
+                    <label for="encryptCustomPublicKey">Recipient's Public Key:</label>
+                    <textarea id="encryptCustomPublicKey" placeholder="Paste recipient's public PGP key here..."></textarea>
+                </div>
+
+                <button class="btn" id="encryptBtn" disabled>Encrypt Message</button>
+                <div id="encryptOutput" class="output" style="display: none;"></div>
+            </div>
+
+            <div class="card">
+                <h2>
+                    <span class="icon">🔓</span>
+                    Decrypt Message
+                    <span id="decryptStatus" class="status pending">Keys Required</span>
+                </h2>
+                <div class="form-group">
+                    <label for="messageToDecrypt">Encrypted Message to Decrypt:</label>
+                    <textarea id="messageToDecrypt" placeholder="Paste encrypted PGP message here..."></textarea>
+                </div>
+                <button class="btn" id="decryptBtn" disabled>Decrypt Message</button>
+                <div id="decryptOutput" class="output" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
