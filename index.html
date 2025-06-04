@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenPGP.js web PKI Demo (v6)</title>
     <script src="https://cdn.jsdelivr.net/npm/openpgp@6.1.1/dist/openpgp.min.js"></script>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <div class="container">
@@ -136,6 +136,13 @@
                 <div id="decryptOutput" class="output" style="display: none;"></div>
             </div>
         </div>
+  <div class="warning-section">
+            <h2>⚠️ Important Security Warning ⚠️</h2>
+            <p>This demo is for **educational and testing purposes ONLY**. We strongly advise against generating or using any **real or sensitive PGP private keys** with this web application.</p>
+            <p>For secure PGP key generation and management, always use **trusted desktop applications** like <a href="https://gnupg.org/" target="_blank" rel="noopener noreferrer">GnuPG (GPG)</a> on your **local system**, ideally while **offline**. Web-based key generation carries inherent risks due to the browser environment and potential for malicious code injection.</p>
+        </div>
+    
+      
     </div>
 
     <script src="js/pki.js"></script>
