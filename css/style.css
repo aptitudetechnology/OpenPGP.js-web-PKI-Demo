@@ -229,6 +229,66 @@
             animation: spin 1s linear infinite;
         }
 
+/* New Warning Section Styles */
+.warning-section {
+    background: #fef2f2; /* Light red background, similar to error status */
+    border: 2px solid #ef4444; /* A slightly darker red border */
+    border-radius: 20px;
+    padding: 30px;
+    margin-top: 40px; /* Spacing from the cards above */
+    text-align: center;
+    color: #dc2626; /* Dark red text color, consistent with error status */
+    box-shadow: 0 10px 30px rgba(252, 165, 165, 0.3); /* Softer, red-tinted shadow */
+}
+
+.warning-section h2 {
+    font-size: 1.8rem;
+    margin-bottom: 15px;
+    color: #b91c1c; /* Even darker red for the heading */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.warning-section p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    margin-bottom: 15px;
+}
+
+.warning-section p:last-of-type {
+    margin-bottom: 0; /* Remove bottom margin for the last paragraph */
+}
+
+.warning-section a {
+    color: #764ba2; /* Use your main gradient's end color for links */
+    text-decoration: underline;
+    font-weight: 600;
+    transition: color 0.2s ease;
+}
+
+.warning-section a:hover {
+    color: #667eea; /* Use your main gradient's start color on hover */
+}
+
+/* Media query for smaller screens */
+@media (max-width: 768px) {
+    .warning-section {
+        padding: 20px;
+        margin-top: 30px;
+    }
+
+    .warning-section h2 {
+        font-size: 1.5rem;
+    }
+
+    .warning-section p {
+        font-size: 1rem;
+    }
+}
+
+
     .hidden {
       display: none !important;
       }
