@@ -32,6 +32,88 @@ function toggleEncryptCustomPublicKey() {
     }
 }
 
+async function verifyMessage() {
+    const verifyBtn = document.getElementById('verifyBtn');
+    const verifyOutput = document.getElementById('verifyOutput');
+
+    try {
+        verifyBtn.disabled = true;
+        verifyBtn.innerHTML = '<span class="loading"></span> Verifying...';
+        verifyOutput.style.display = 'none';
+
+        const signedMessageText = document.getElementById('signedMessageToVerify').value.trim();
+        let customPublicKey = document.getElementById('verifyCustomPublicKey').value.trim();
+        const useCustomKey = document.getElementById('verifyCustomPublicKeyContainer').style.display === 'block';
+
+        if (!signedMessageText) throw new Error('Please enter a signed message to verify');
+
+        let publicKeyToUse = '';
+
+        if (useCustomKey) {
+            // Sanitize the custom public key input
+            customPublicKey = customPublicKey
+                .replace(/\r\n/g, '\n') // Normalize Windows newlines to Unix newlines
+                .replace(/[\u200B-\u200D\uFEFF]/g, ''); // Remove zero-width characters
+
+            if (!customPublicKey) throw new Error('Please enter a custom public key or switch to use the generated key.');
+            publicKeyToUse = customPublicKey;
+        } else {
+            if (!keyPair || !keyPair.publicKey) throw new Error('Generated public key not available. Generate keys first or provide a custom key.');
+            publicKeyToUse = keyPair.publicKey;
+        }
+
+        // Read the signed message
+        const signedMessageObj = await openpgp.readMessage({ armoredMessage: signedMessageText });
+        
+        // Read the public key
+        const publicKeyObj = await openpgp.readKey({ armoredKey: publicKeyToUse });
+
+        // Verify the message
+        const verificationResult = await openpgp.verify({
+            message: signedMessageObj,
+            verificationKeys: publicKeyObj,
+            format: 'utf8'
+        });
+
+        // Extract the original message and verification status
+        const { data: originalMessage, signatures } = verificationResult;
+        
+        // Check if any signature is valid
+        const isValid = signatures.some(sig => sig.verified);
+        
+        if (isValid) {
+            verifyOutput.style.display = 'block';
+            verifyOutput.className = 'output success';
+            verifyOutput.innerHTML = `✅ Message verification successful!<br><br>
+                                     <strong>Signature Status:</strong> Valid<br>
+                                     <strong>Original Message:</strong><pre>${originalMessage}</pre>`;
+
+            // Add copy button for the original message
+            const existingCopyBtn = verifyOutput.querySelector('.copy-btn');
+            if (existingCopyBtn) existingCopyBtn.remove();
+
+            const copyBtn = document.createElement('button');
+            copyBtn.className = 'btn copy-btn';
+            copyBtn.textContent = 'Copy Original Message';
+            copyBtn.onclick = (event) => copyToClipboard(originalMessage, event.target);
+            verifyOutput.appendChild(copyBtn);
+        } else {
+            verifyOutput.style.display = 'block';
+            verifyOutput.className = 'output error';
+            verifyOutput.textContent = '❌ Message verification failed! The signature is invalid or the message has been tampered with.';
+        }
+
+    } catch (error) {
+        console.error('Verification error:', error);
+        verifyOutput.style.display = 'block';
+        verifyOutput.className = 'output error';
+        verifyOutput.textContent = `❌ Verification Error: ${error.message || error}`;
+    } finally {
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Verify Message';
+    }
+}
+
 function copyToClipboard(text, buttonElement) {
     if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(() => {
@@ -46,6 +128,28 @@ function copyToClipboard(text, buttonElement) {
         });
     } else {
         fallbackCopyTextToClipboard(text, buttonElement);
+    }
+}
+
+function switchTab(activeTabId, activeContentId) {
+    // Remove active class from all tabs and content
+    document.querySelectorAll('.tab-btn').forEach(tab => tab.classList.remove('active'));
+    document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+    
+    // Add active class to selected tab and content
+    document.getElementById(activeTabId).classList.add('active');
+    document.getElementById(activeContentId).classList.add('active');
+}
+
+function toggleVerifyCustomPublicKey() {
+    const container = document.getElementById('verifyCustomPublicKeyContainer');
+    const button = document.getElementById('toggleVerifyPublicKeyBtn');
+    if (container.style.display === 'none') {
+        container.style.display = 'block';
+        button.textContent = 'Use Generated Public Key';
+    } else {
+        container.style.display = 'none';
+        button.textContent = 'Use Custom Public Key';
     }
 }
 
@@ -120,13 +224,16 @@ function handleKeyFileLoad(event) {
             keyStatus.textContent = 'Ready';
             keyStatus.className = 'status ready';
 
-            // Enable other buttons
-            document.getElementById('signBtn').disabled = false;
+            // Enable all buttons that need keys
+           document.getElementById('signBtn').disabled = false;
+            document.getElementById('signBtnNew').disabled = false; // Fixed: Enable the new sign button
             document.getElementById('encryptBtn').disabled = false;
             document.getElementById('decryptBtn').disabled = false;
+            document.getElementById('verifyBtn').disabled = false; // Fixed: Enable verify button
             document.getElementById('saveKeyBtn').disabled = false;
             
-            ['signStatus', 'encryptStatus', 'decryptStatus'].forEach(id => {
+            // Update all status indicators
+            ['signVerifyStatus', 'encryptStatus', 'decryptStatus'].forEach(id => {
                 const el = document.getElementById(id);
                 el.textContent = 'Ready';
                 el.className = 'status ready';
@@ -227,11 +334,16 @@ async function generateKeyPair() {
         keyStatus.textContent = 'Ready';
         keyStatus.className = 'status ready';
 
+        // Enable all buttons that need keys
         document.getElementById('signBtn').disabled = false;
+        document.getElementById('signBtnNew').disabled = false; // Fixed: Enable the new sign button
         document.getElementById('encryptBtn').disabled = false;
         document.getElementById('decryptBtn').disabled = false;
+        document.getElementById('verifyBtn').disabled = false; // Fixed: Enable verify button
         document.getElementById('saveKeyBtn').disabled = false;
-        ['signStatus', 'encryptStatus', 'decryptStatus'].forEach(id => {
+        
+        // Update all status indicators
+        ['signVerifyStatus', 'encryptStatus', 'decryptStatus'].forEach(id => {
             const el = document.getElementById(id);
             el.textContent = 'Ready';
             el.className = 'status ready';
@@ -267,15 +379,15 @@ async function generateKeyPair() {
 }
 
 async function signMessage() {
-    const signBtn = document.getElementById('signBtn');
-    const signOutput = document.getElementById('signOutput');
+    const signBtnNew = document.getElementById('signBtnNew');
+    const signOutputNew = document.getElementById('signOutputNew');
+    const messageText = document.getElementById('messageToSignNew').value;
 
     try {
-        signBtn.disabled = true;
-        signBtn.innerHTML = '<span class="loading"></span> Signing...';
-        signOutput.style.display = 'none';
+        signBtnNew.disabled = true;
+        signBtnNew.innerHTML = '<span class="loading"></span> Signing...';
+        signOutputNew.style.display = 'none';
 
-        const messageText = document.getElementById('messageToSign').value;
         const localPassphrase = document.getElementById('passphrase').value;
 
         if (!messageText) throw new Error('Please enter a message to sign');
@@ -301,33 +413,33 @@ async function signMessage() {
             format: 'armored'
         });
 
-        signOutput.style.display = 'block';
-        signOutput.className = 'output success';
-        signOutput.innerHTML = `✅ Message signed successfully!<br><br><pre>${signedMessage}</pre>`;
+        signOutputNew.style.display = 'block';
+        signOutputNew.className = 'output success';
+        signOutputNew.innerHTML = `✅ Message signed successfully!<br><br><pre>${signedMessage}</pre>`;
 
-        const existingCopyBtn = signOutput.querySelector('.copy-btn');
+        const existingCopyBtn = signOutputNew.querySelector('.copy-btn');
         if (existingCopyBtn) existingCopyBtn.remove();
 
         const copyBtn = document.createElement('button');
         copyBtn.className = 'btn copy-btn';
         copyBtn.textContent = 'Copy Signed Message';
         copyBtn.onclick = (event) => copyToClipboard(signedMessage, event.target);
-        signOutput.appendChild(copyBtn);
+        signOutputNew.appendChild(copyBtn);
 
     } catch (error) {
         console.error('Signing error:', error);
-        signOutput.style.display = 'block';
-        signOutput.className = 'output error';
+        signOutputNew.style.display = 'block';
+        signOutputNew.className = 'output error';
         
         let errorMessage = `❌ Signing Error: ${error.message || error}`;
         if (error.message && error.message.includes('Incorrect key passphrase')) {
             errorMessage += `\n\n💡 Troubleshooting:\n- If you loaded keys from a file, make sure you entered the correct passphrase for those keys\n- The passphrase field was cleared when you loaded the keys\n- Try entering the passphrase that was used when the keys were originally generated`;
         }
         
-        signOutput.textContent = errorMessage;
+        signOutputNew.textContent = errorMessage;
     } finally {
-        signBtn.disabled = false;
-        signBtn.textContent = 'Sign Message';
+        signBtnNew.disabled = false;
+        signBtnNew.textContent = 'Sign Message';
     }
 }
 
@@ -479,14 +591,32 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             console.log('OpenPGP.js loaded and ready (version unknown).');
         }
+      
+        // Tab switching for Sign & Verify section
+        document.getElementById('signTab').addEventListener('click', () => switchTab('signTab', 'signMode'));
+        document.getElementById('verifyTab').addEventListener('click', () => switchTab('verifyTab', 'verifyMode'));
+        
+        // Key management event listeners
         document.getElementById('generateBtn').addEventListener('click', generateKeyPair);
         document.getElementById('saveKeyBtn').addEventListener('click', saveKeyPair);
         document.getElementById('loadKeyBtn').addEventListener('click', loadKeyPair);
         document.getElementById('keyFileInput').addEventListener('change', handleKeyFileLoad);
-        document.getElementById('signBtn').addEventListener('click', signMessage);
-        document.getElementById('encryptBtn').addEventListener('click', encryptMessage); // This now calls the new function
-        document.getElementById('toggleEncryptPublicKeyBtn').addEventListener('click', toggleEncryptCustomPublicKey); // Event listener for the new button
+        
+        // Sign message event listeners (both old and new buttons)
+       // document.getElementById('signBtn').addEventListener('click', signMessage);
+        document.getElementById('signBtnNew').addEventListener('click', signMessage);
+        
+        // FIXED: Add the missing verify button event listener
+        document.getElementById('verifyBtn').addEventListener('click', verifyMessage);
+        
+        // Encrypt/Decrypt event listeners
+        document.getElementById('encryptBtn').addEventListener('click', encryptMessage);
         document.getElementById('decryptBtn').addEventListener('click', decryptMessage);
+        
+        // Toggle buttons for custom keys
+        document.getElementById('toggleEncryptPublicKeyBtn').addEventListener('click', toggleEncryptCustomPublicKey);
+        document.getElementById('toggleVerifyPublicKeyBtn').addEventListener('click', toggleVerifyCustomPublicKey);
+        
     }).catch(error => {
         console.error("Failed to initialize OpenPGP:", error);
         alert("Error: Could not load OpenPGP library. Please check the console for details and ensure the CDN link is working.");
