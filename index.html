@@ -5,12 +5,12 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>OpenPGP.js web PKI Demo (v6)</title>
     <script src="https://cdn.jsdelivr.net/npm/openpgp@6.1.1/dist/openpgp.min.js"></script>
-    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
     <div class="container">
         <div class="header">
-            <h1>🔐 OpenPGP.js web PKI Demo (v6)</h1>
+            <h1>🔐 OpenPGP.js (v6.1.1) web PKI Demo</h1>
             <p>Generate keys, sign messages, and encrypt/decrypt data with modern cryptography</p>
         </div>
 
@@ -43,7 +43,7 @@
                 <div id="keyOutput" class="output" style="display: none;"></div>
             </div>
 
-            <div class="card">
+            <div class="card hidden">
                 <h2>
                     <span class="icon">✍️</span>
                     Sign Message
@@ -55,6 +55,49 @@
                 </div>
                 <button class="btn" id="signBtn" disabled>Sign Message</button>
                 <div id="signOutput" class="output" style="display: none;"></div>
+            </div>
+          
+          <div class="card">
+                <h2>
+                    <span class="icon">✍️</span>
+                    Sign & Verify Messages
+                    <span id="signVerifyStatus" class="status pending">Keys Required</span>
+                </h2>
+                
+                <!-- Tab Navigation -->
+                <div class="tab-nav">
+                    <button class="tab-btn active" id="signTab">Sign Message</button>
+                    <button class="tab-btn" id="verifyTab">Verify Message</button>
+                </div>
+
+                <!-- Sign Mode -->
+                
+<div id="signMode" class="tab-content active">
+    <div class="form-group">
+        <label for="messageToSignNew">Message to Sign:</label>
+        <textarea id="messageToSignNew" placeholder="Enter your message here...">Hello, this is a test message that will be digitally signed!</textarea>
+    </div>
+    <button class="btn" id="signBtnNew" disabled>Sign Message</button>
+    <div id="signOutputNew" class="output" style="display: none;"></div>
+</div>
+
+                <!-- Verify Mode -->
+                <div id="verifyMode" class="tab-content">
+                    <div class="form-group">
+                        <label for="signedMessageToVerify">Signed Message to Verify:</label>
+                        <textarea id="signedMessageToVerify" placeholder="Paste signed PGP message here..."></textarea>
+                    </div>
+                    
+                    <button id="toggleVerifyPublicKeyBtn" class="btn">Use Custom Public Key</button>
+                    
+                    <div class="form-group" id="verifyCustomPublicKeyContainer" style="display:none;">
+                        <label for="verifyCustomPublicKey">Signer's Public Key:</label>
+                        <textarea id="verifyCustomPublicKey" placeholder="Paste signer's public PGP key here..."></textarea>
+                    </div>
+                    
+                    <button class="btn" id="verifyBtn" disabled>Verify Message</button>
+                    <div id="verifyOutput" class="output" style="display: none;"></div>
+                </div>
             </div>
 
             <div class="card">
