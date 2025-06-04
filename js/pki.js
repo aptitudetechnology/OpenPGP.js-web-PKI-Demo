@@ -78,14 +78,42 @@ async function verifyMessage() {
         // Extract the original message and verification status
         const { data: originalMessage, signatures } = verificationResult;
         
-        // Check if any signature is valid
-        const isValid = signatures.some(sig => sig.verified);
+        // FIXED: Properly check signature validity
+        let isValid = false;
+        let verificationDetails = [];
+        
+        // Check each signature properly
+        for (const signature of signatures) {
+            try {
+                // Await the signature verification if it's a Promise
+                const signatureResult = await signature.verified;
+                
+                verificationDetails.push({
+                    valid: signatureResult === true,
+                    keyID: signature.keyID ? signature.keyID.toHex() : 'Unknown',
+                    signature: signature
+                });
+                
+                if (signatureResult === true) {
+                    isValid = true;
+                }
+            } catch (sigError) {
+                console.error('Signature verification error:', sigError);
+                verificationDetails.push({
+                    valid: false,
+                    keyID: signature.keyID ? signature.keyID.toHex() : 'Unknown',
+                    error: sigError.message || sigError
+                });
+            }
+        }
+        
+        verifyOutput.style.display = 'block';
         
         if (isValid) {
-            verifyOutput.style.display = 'block';
             verifyOutput.className = 'output success';
             verifyOutput.innerHTML = `✅ Message verification successful!<br><br>
                                      <strong>Signature Status:</strong> Valid<br>
+                                     <strong>Verification Details:</strong> ${verificationDetails.length} signature(s) checked, ${verificationDetails.filter(d => d.valid).length} valid<br>
                                      <strong>Original Message:</strong><pre>${originalMessage}</pre>`;
 
             // Add copy button for the original message
@@ -98,16 +126,39 @@ async function verifyMessage() {
             copyBtn.onclick = (event) => copyToClipboard(originalMessage, event.target);
             verifyOutput.appendChild(copyBtn);
         } else {
-            verifyOutput.style.display = 'block';
             verifyOutput.className = 'output error';
-            verifyOutput.textContent = '❌ Message verification failed! The signature is invalid or the message has been tampered with.';
+            
+            let errorDetails = '';
+            if (verificationDetails.length > 0) {
+                errorDetails = '<br><br><strong>Verification Details:</strong><br>';
+                verificationDetails.forEach((detail, index) => {
+                    errorDetails += `Signature ${index + 1}: ${detail.valid ? 'Valid' : 'Invalid'} (Key ID: ${detail.keyID})`;
+                    if (detail.error) {
+                        errorDetails += ` - Error: ${detail.error}`;
+                    }
+                    errorDetails += '<br>';
+                });
+            }
+            
+            verifyOutput.innerHTML = `❌ Message verification failed!<br><br>
+                                     <strong>Reason:</strong> The signature is invalid, the message has been tampered with, or you're using the wrong public key.${errorDetails}`;
         }
 
     } catch (error) {
         console.error('Verification error:', error);
         verifyOutput.style.display = 'block';
         verifyOutput.className = 'output error';
-        verifyOutput.textContent = `❌ Verification Error: ${error.message || error}`;
+        
+        let errorMessage = `❌ Verification Error: ${error.message || error}`;
+        
+        // Add helpful debugging information
+        if (error.message && error.message.includes('Error reading')) {
+            errorMessage += '<br><br>💡 Possible issues:<br>• The signed message format is invalid<br>• The public key format is invalid<br>• Copy-paste errors (check for missing characters)';
+        } else if (error.message && error.message.includes('No signatures')) {
+            errorMessage += '<br><br>💡 This message doesn\'t appear to contain any signatures.';
+        }
+        
+        verifyOutput.innerHTML = errorMessage;
     } finally {
         verifyBtn.disabled = false;
         verifyBtn.textContent = 'Verify Message';
